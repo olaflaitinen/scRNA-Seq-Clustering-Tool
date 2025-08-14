@@ -1,63 +1,33 @@
-# scRNA-Seq Clustering and Annotation Tool
+# Scanpy Single-Cell RNA-Seq Clustering Tool
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://opensource.org/licenses/MIT)
 ![Language](https://img.shields.io/badge/language-Python-blue.svg)
-[![Built with Scanpy](https://img.shields.io/badge/built%20with-Scanpy-brightgreen.svg)](https://scanpy.readthedocs.io/en/stable/)
+[![Jupyter CI](https://github.com/olaflaitinen/scRNA-Seq-Clustering-Tool/actions/workflows/jupyter-ci.yml/badge.svg)](https://github.com/olaflaitinen/scRNA-Seq-Clustering-Tool/actions/workflows/jupyter-ci.yml)
 
-An implementation of a standard single-cell RNA-Seq (scRNA-Seq) analysis workflow using [Scanpy](https://scanpy.readthedocs.io/en/stable/). This project demonstrates the key steps from raw count data to annotated cell type clusters.
+An implementation of a standard single-cell RNA-Seq (scRNA-Seq) analysis workflow using the Python package `scanpy`. This project serves as a practical demonstration of the skills acquired from a Single-Cell RNA-Seq analysis certificate.
 
-![Example UMAP Plot](assets/umap_cell_types_example.png)
+The workflow covers data loading, quality control, normalization, dimensionality reduction, clustering, and cell type annotation using known marker genes.
 
-### Workflow Overview
+### Analysis Workflow
 
-The pipeline follows the best practices for scRNA-Seq analysis as established by the community.
+The pipeline follows the standard best practices for scRNA-Seq analysis:
 
-```
-┌────────────────────────┐
-│     Raw Count Matrix   │
-└──────────┬─────────────┘
-           │
-           ▼
-┌────────────────────────┐
-│   QC & Filtering       │ (Filter low-quality cells/genes)
-└──────────┬─────────────┘
-           │
-           ▼
-┌────────────────────────┐
-│ Normalization & Scaling│
-└──────────┬─────────────┘
-           │
-           ▼
-┌────────────────────────┐
-│Dimensionality Reduction│ (PCA -> UMAP)
-└──────────┬─────────────┘
-           │
-           ▼
-┌────────────────────────┐
-│      Clustering        │ (Leiden Algorithm)
-└──────────┬─────────────┘
-           │
-           ▼
-┌────────────────────────┐
-│ Find Marker Genes &    │
-│  Cell Type Annotation  │
-└──────────┬─────────────┘
-           │
-           ▼
-┌────────────────────────┐
-│   Annotated UMAP Plot  │
-└────────────────────────┘
-```
+1.  **Data Loading**: Read 10x Genomics-formatted data.
+2.  **Quality Control (QC)**: Filter out low-quality cells and genes.
+3.  **Normalization**: Normalize and log-transform the count data.
+4.  **Feature Selection**: Identify highly variable genes.
+5.  **Dimensionality Reduction**: Perform PCA and UMAP.
+6.  **Clustering**: Identify cell clusters using the Leiden algorithm.
+7.  **Marker Gene Identification**: Find differentially expressed genes for each cluster.
+8.  **Cell Type Annotation**: Assign biological cell types to clusters based on marker genes.
 
-### Features
+### Key Visualizations
 
--   **Data Loading**: Uses `scanpy`'s built-in functions to load common scRNA-Seq data formats.
--   **Quality Control**: Implements standard QC, including filtering by gene counts, cell counts, and mitochondrial gene percentage.
--   **Dimensionality Reduction**: Utilizes Principal Component Analysis (PCA) and Uniform Manifold Approximation and Projection (UMAP).
--   **Graph-based Clustering**: Employs the highly performant Leiden algorithm.
--   **Marker Gene Identification**: Ranks genes by cluster to identify specific markers.
--   **Cell Type Annotation**: Provides a semi-automated approach to annotate clusters based on known marker genes.
--   **Visualization**: Generates key plots like UMAPs, dot plots, and violin plots to interpret results.
+The primary outputs are UMAP plots, which visualize the cell-to-cell similarity in 2D space.
+
+| UMAP by Leiden Cluster | UMAP by Annotated Cell Type |
+| :--------------------: | :-------------------------: |
+| ![UMAP by Cluster](assets/umap_clusters.png) | ![UMAP by Annotation](assets/umap_annotated.png) |
 
 ### Installation
 
@@ -67,26 +37,40 @@ The pipeline follows the best practices for scRNA-Seq analysis as established by
     cd scRNA-Seq-Clustering-Tool
     ```
 
-2.  **Create and activate a virtual environment (recommended):**
+2.  **Create and activate a virtual environment:**
     ```bash
     python3 -m venv venv
     source venv/bin/activate
     ```
 
-3.  **Install the required dependencies:**
+3.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
 
-### Quick Start
+### Usage
 
-The best way to get started is to run the guided walkthrough in the Jupyter Notebook.
+#### 1. Download the Data
+
+This workflow uses the publicly available 3k PBMC dataset from 10x Genomics. A helper script is not included, so please download and extract it manually.
 
 ```bash
-jupyter-lab notebooks/analysis_walkthrough.ipynb
-```
+# Create the data directory
+mkdir -p data/pbmc3k/
 
-This notebook will load a public dataset (PBMC 3k from 10x Genomics) and take you through every step of the analysis, from loading data to generating the final annotated UMAP plot.
+# Download and extract the data
+curl -o data/pbmc3k_filtered_gene_bc_matrices.tar.gz http://cf.10xgenomics.com/samples/cell-exp/1.1.0/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz
+tar -xzf data/pbmc3k_filtered_gene_bc_matrices.tar.gz -C data/pbmc3k/
+```
+This will create the required `data/pbmc3k/filtered_gene_bc_matrices/hg19/` directory structure.
+
+#### 2. Run the Analysis Notebook
+
+The entire workflow is documented in a single Jupyter Notebook. Launch Jupyter Lab and open the notebook to run the analysis step-by-step.
+
+```bash
+jupyter-lab notebooks/scrna_analysis_workflow.ipynb
+```
 
 ### License
 
