@@ -1,0 +1,235 @@
+# Configuration file for scRNA-Seq Analysis Workflow
+#
+# This file contains all configurable parameters for the analysis pipeline.
+# Modify these values to customize the analysis for your specific dataset.
+
+# ============================================================================
+# Data Paths
+# ============================================================================
+paths:
+  data_dir: "data/pbmc3k/filtered_gene_bc_matrices/hg19/"
+  figures_dir: "figures/"
+  results_dir: "data/"
+  output_file: "pbmc3k_processed.h5ad"
+
+# ============================================================================
+# Quality Control Parameters
+# ============================================================================
+qc:
+  # Minimum number of genes expressed per cell
+  min_genes: 200
+
+  # Maximum number of genes expressed per cell (filter out potential doublets)
+  max_genes: 2500
+
+  # Maximum percentage of mitochondrial gene counts
+  # High values indicate dying/dead cells
+  max_pct_mt: 5.0
+
+  # Minimum number of cells in which a gene must be expressed
+  min_cells: 3
+
+# ============================================================================
+# Normalization Parameters
+# ============================================================================
+normalization:
+  # Target sum for normalization (typically 10,000)
+  target_sum: 10000
+
+  # Whether to save raw counts before normalization
+  save_raw: true
+
+# ============================================================================
+# Feature Selection Parameters
+# ============================================================================
+feature_selection:
+  # Number of highly variable genes to select
+  n_top_genes: 2000
+
+  # Method for identifying highly variable genes
+  # Options: 'seurat', 'cell_ranger', 'seurat_v3'
+  flavor: "seurat"
+
+  # Whether to subset to highly variable genes
+  subset: true
+
+# ============================================================================
+# Regression and Scaling Parameters
+# ============================================================================
+preprocessing:
+  # Variables to regress out (technical variation)
+  # Common options: ['total_counts', 'pct_counts_mt']
+  regress_out:
+    - "total_counts"
+    - "pct_counts_mt"
+
+  # Maximum value for scaling (clip outliers)
+  scale_max_value: 10
+
+# ============================================================================
+# PCA Parameters
+# ============================================================================
+pca:
+  # Number of principal components to compute
+  n_comps: 50
+
+  # SVD solver to use
+  # Options: 'arpack', 'randomized', 'auto'
+  svd_solver: "arpack"
+
+  # Random state for reproducibility
+  random_state: 42
+
+# ============================================================================
+# Neighborhood Graph Parameters
+# ============================================================================
+neighbors:
+  # Number of neighbors to use
+  n_neighbors: 10
+
+  # Number of principal components to use
+  n_pcs: 40
+
+  # Metric for computing distances
+  # Options: 'euclidean', 'cosine', etc.
+  metric: "euclidean"
+
+# ============================================================================
+# UMAP Parameters
+# ============================================================================
+umap:
+  # Minimum distance between points in UMAP space
+  min_dist: 0.5
+
+  # Number of neighbors for UMAP
+  # If null, uses the value from neighbors.n_neighbors
+  n_neighbors: null
+
+  # Random state for reproducibility
+  random_state: 42
+
+# ============================================================================
+# Clustering Parameters
+# ============================================================================
+clustering:
+  # Clustering algorithm to use
+  # Options: 'leiden', 'louvain'
+  algorithm: "leiden"
+
+  # Resolution parameter for clustering
+  # Higher values lead to more clusters
+  resolution: 0.9
+
+  # Random state for reproducibility
+  random_state: 42
+
+# ============================================================================
+# Marker Gene Analysis Parameters
+# ============================================================================
+marker_genes:
+  # Method for differential expression testing
+  # Options: 'wilcoxon', 't-test', 'logreg'
+  method: "wilcoxon"
+
+  # Number of top marker genes to identify per cluster
+  n_genes: 25
+
+  # Grouping variable for finding markers
+  groupby: "leiden"
+
+# ============================================================================
+# Visualization Parameters
+# ============================================================================
+visualization:
+  # Figure DPI
+  dpi: 80
+
+  # Figure format for saving
+  # Options: 'png', 'pdf', 'svg'
+  format: "png"
+
+  # High resolution DPI for final figures
+  high_res_dpi: 300
+
+  # Color palette
+  # Options: see matplotlib/seaborn palettes
+  palette: null
+
+  # Whether to show figures inline
+  show_figures: true
+
+# ============================================================================
+# Cell Type Annotation
+# ============================================================================
+annotation:
+  # Known marker genes for PBMC cell types
+  # Modify these based on your expected cell types
+  marker_genes:
+    "CD4 T cells":
+      - "IL7R"
+      - "CD4"
+    "CD8 T cells":
+      - "CD8A"
+      - "CD8B"
+    "B cells":
+      - "CD79A"
+      - "MS4A1"
+    "NK cells":
+      - "GNLY"
+      - "NKG7"
+    "CD14+ Monocytes":
+      - "CD14"
+      - "LYZ"
+    "FCGR3A+ Monocytes":
+      - "FCGR3A"
+      - "MS4A7"
+    "Dendritic cells":
+      - "FCER1A"
+      - "CST3"
+    "Megakaryocytes":
+      - "PPBP"
+
+  # Manual cluster to cell type mapping
+  # Update this based on your analysis results
+  cluster_mapping:
+    "0": "CD4 T cells"
+    "1": "CD14+ Monocytes"
+    "2": "B cells"
+    "3": "CD4 T cells"
+    "4": "CD8 T cells"
+    "5": "NK cells"
+    "6": "FCGR3A+ Monocytes"
+    "7": "Dendritic cells"
+    "8": "Megakaryocytes"
+
+# ============================================================================
+# Computational Parameters
+# ============================================================================
+computation:
+  # Number of jobs for parallel processing
+  # -1 uses all available cores
+  n_jobs: -1
+
+  # Random seed for reproducibility
+  random_state: 42
+
+  # Verbosity level
+  # 0: errors only, 1: warnings, 2: info, 3: hints
+  verbosity: 3
+
+# ============================================================================
+# Export Options
+# ============================================================================
+export:
+  # Whether to export cell annotations
+  export_annotations: true
+
+  # Whether to export marker genes
+  export_markers: true
+
+  # Whether to save processed AnnData object
+  save_adata: true
+
+  # Format for exporting tables
+  # Options: 'csv', 'tsv', 'excel'
+  table_format: "csv"
