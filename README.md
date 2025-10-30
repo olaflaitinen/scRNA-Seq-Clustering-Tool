@@ -419,7 +419,7 @@ The analysis identifies major PBMC cell populations:
 
 | Leiden Clusters | Annotated Cell Types |
 |:---------------:|:-------------------:|
-| ![UMAP Clusters](https://via.placeholder.com/400x300/6366f1/ffffff?text=UMAP+by+Cluster) | ![UMAP Annotated](https://via.placeholder.com/400x300/10b981/ffffff?text=UMAP+by+Cell+Type) |
+| ![UMAP Clusters](assets/umap_clusters.png) | ![UMAP Annotated](assets/umap_annotated.png) |
 
 #### Cell Type Distribution
 
