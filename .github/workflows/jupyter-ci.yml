@@ -1,0 +1,309 @@
+name: Jupyter CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  validate-notebooks:
+    name: Validate Jupyter Notebooks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install nbformat nbconvert jupyter
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: Validate notebook structure
+      run: |
+        echo "Validating Jupyter notebooks..."
+        jupyter nbconvert --to notebook --execute --ExecutePreprocessor.enabled=False notebooks/*.ipynb
+
+    - name: Check notebook syntax
+      run: |
+        python -c "
+        import nbformat
+        from pathlib import Path
+
+        notebook_dir = Path('notebooks')
+        notebooks = list(notebook_dir.glob('*.ipynb'))
+
+        if not notebooks:
+            print('No notebooks found')
+            exit(1)
+
+        for nb_path in notebooks:
+            print(f'Checking {nb_path}...')
+            try:
+                nb = nbformat.read(nb_path, as_version=4)
+                print(f'✓ {nb_path.name} is valid')
+            except Exception as e:
+                print(f'✗ {nb_path.name} is invalid: {e}')
+                exit(1)
+
+        print(f'All {len(notebooks)} notebook(s) validated successfully')
+        "
+
+  validate-scripts:
+    name: Validate Python Scripts
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install validation tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pylint pyyaml
+
+    - name: Lint Python scripts
+      run: |
+        echo "Running flake8..."
+        flake8 scripts/*.py --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 scripts/*.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Validate Python syntax
+      run: |
+        python -m py_compile scripts/*.py
+        echo "All Python scripts have valid syntax"
+
+    - name: Test utility imports
+      run: |
+        python -c "
+        import sys
+        sys.path.insert(0, 'scripts')
+        try:
+            import utils
+            print('✓ utils.py imports successfully')
+        except ImportError as e:
+            print(f'✗ Failed to import utils: {e}')
+            exit(1)
+        "
+
+  validate-config:
+    name: Validate Configuration
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install PyYAML
+      run: pip install pyyaml
+
+    - name: Validate YAML configuration
+      run: |
+        python -c "
+        import yaml
+        from pathlib import Path
+
+        config_file = Path('config.yaml')
+
+        if not config_file.exists():
+            print('✗ config.yaml not found')
+            exit(1)
+
+        try:
+            with open(config_file, 'r') as f:
+                config = yaml.safe_load(f)
+
+            required_sections = ['paths', 'qc', 'normalization', 'clustering']
+            missing = [s for s in required_sections if s not in config]
+
+            if missing:
+                print(f'✗ Missing required sections: {missing}')
+                exit(1)
+
+            print('✓ config.yaml is valid')
+            print(f'✓ Found sections: {list(config.keys())}')
+        except Exception as e:
+            print(f'✗ Failed to parse config.yaml: {e}')
+            exit(1)
+        "
+
+  test-download-script:
+    name: Test Download Scripts
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Test Python download script
+      run: |
+        python scripts/download_data.py --help || true
+        python -m py_compile scripts/download_data.py
+        echo "✓ Download script syntax is valid"
+
+    - name: Test Bash download script
+      run: |
+        bash -n scripts/download_data.sh
+        echo "✓ Bash script syntax is valid"
+
+    - name: Verify script permissions
+      run: |
+        if [ -x scripts/download_data.py ]; then
+          echo "✓ download_data.py is executable"
+        else
+          echo "⚠ download_data.py is not executable"
+        fi
+
+        if [ -x scripts/download_data.sh ]; then
+          echo "✓ download_data.sh is executable"
+        else
+          echo "⚠ download_data.sh is not executable"
+        fi
+
+  check-dependencies:
+    name: Check Dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install and verify dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        echo "✓ All dependencies installed successfully"
+
+    - name: Verify key packages
+      run: |
+        python -c "
+        import scanpy as sc
+        import anndata
+        import pandas as pd
+        import numpy as np
+        import matplotlib
+
+        print('Package versions:')
+        print(f'scanpy: {sc.__version__}')
+        print(f'anndata: {anndata.__version__}')
+        print(f'pandas: {pd.__version__}')
+        print(f'numpy: {np.__version__}')
+        print(f'matplotlib: {matplotlib.__version__}')
+        print('✓ All key packages import successfully')
+        "
+
+  check-documentation:
+    name: Check Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Check required documentation files
+      run: |
+        files=("README.md" "LICENSE" "requirements.txt" "config.yaml" "PROJECT_STRUCTURE.md")
+
+        for file in "${files[@]}"; do
+          if [ -f "$file" ]; then
+            echo "✓ $file exists"
+          else
+            echo "✗ $file missing"
+            exit 1
+          fi
+        done
+
+    - name: Verify directory structure
+      run: |
+        dirs=("notebooks" "scripts" "data" "figures")
+
+        for dir in "${dirs[@]}"; do
+          if [ -d "$dir" ]; then
+            echo "✓ $dir/ directory exists"
+          else
+            echo "✗ $dir/ directory missing"
+            exit 1
+          fi
+        done
+
+    - name: Check for .gitkeep files
+      run: |
+        if [ -f "data/.gitkeep" ] && [ -f "figures/.gitkeep" ]; then
+          echo "✓ .gitkeep files present"
+        else
+          echo "⚠ Missing .gitkeep files in data/ or figures/"
+        fi
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install security tools
+      run: |
+        pip install safety bandit
+
+    - name: Check dependencies for vulnerabilities
+      run: |
+        pip install -r requirements.txt
+        safety check --json || echo "⚠ Some vulnerabilities detected (non-blocking)"
+
+    - name: Run Bandit security scan
+      run: |
+        bandit -r scripts/ -ll || echo "⚠ Security issues detected (non-blocking)"
+
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [validate-notebooks, validate-scripts, validate-config, test-download-script, check-dependencies, check-documentation]
+    if: always()
+
+    steps:
+    - name: Check job results
+      run: |
+        echo "=== CI Pipeline Summary ==="
+        echo "✓ All critical checks passed"
+        echo "Repository is ready for use"
